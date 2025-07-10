@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from pyreco.custom_models import RC
 from pyreco.layers import InputLayer, ReadoutLayer, RandomReservoirLayer
-from pyreco.tuner import Tuner
+from tuner import Tuner
 from pyreco.utils_data import sequence_to_sequence
 
 

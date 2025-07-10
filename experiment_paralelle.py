@@ -5,7 +5,7 @@ from typing import List, Tuple
 from functools import partial
 from multiprocessing import Pool, cpu_count
 
-from pyreco.tuner import Tuner
+from tuner import Tuner
 from pyreco.trial_logger import TrialLogger
 from pyreco.metrics import mse
 from control import control_loop

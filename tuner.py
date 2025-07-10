@@ -4,7 +4,8 @@ import json
 import joblib
 import copy
 from typing import Optional
-from pyreco.trial_logger import TrialLogger
+from trial_logger import TrialLogger
+from pyreco.metrics import assign_metric
 
 
 class Tuner:
@@ -30,7 +31,8 @@ class Tuner:
         self.y_train = y_train
         self.x_val = x_val
         self.y_val = y_val
-        self.metric = metric
+        self.metric_name = metric
+        self.metric = assign_metric(metric) if metric else None
         self.n_trials = n_trials
         self.sampler_type = sampler_type
         self.num_float_steps = num_float_steps

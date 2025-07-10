@@ -1,7 +1,7 @@
 from experiment import run_experiment
 from utils import load_validation_trajectory, load_models
 from pyreco.utils_data import *
-from pyreco.trial_logger import TrialLogger
+from trial_logger import TrialLogger
 from control import control_loop
 from robot import TwoLinkRobot
 import numpy as np
