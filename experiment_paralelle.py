@@ -6,30 +6,39 @@ from functools import partial
 from multiprocessing import Pool, cpu_count
 
 from tuner import Tuner
-from pyreco.trial_logger import TrialLogger
+from trial_logger import TrialLogger
 from pyreco.metrics import mse
 from control import control_loop
 
 
 # === Windows-safe TOP-LEVEL evaluator ===
 def control_loop_evaluator(
-    model, trial, X, Y, robot, trajectory, q_control, qdt_control, val_length
+    model, trial, X, Y, robot,
+    trajectories: list  # List of (trajectory, q_control, qdt_control, val_length)
 ):
     model.fit(X, Y)
-    pred = control_loop(
-        rc=model,
-        robot=robot,
-        trajectory=trajectory,
-        qdt_traj=qdt_control,
-        q_init=q_control[0, :],
-        qdt_init=qdt_control[0, :],
-        disturbance_failure=np.zeros((2, val_length)),
-        measurement_failure=np.zeros((4, val_length)),
-        taudt_threshold=np.array([-5e-2, 5e-2])
-    )
+    rmses = []
+
+    for trajectory, q_control, qdt_control, val_length, *_ in trajectories:
+        pred = control_loop(
+            rc=model,
+            robot=robot,
+            trajectory=trajectory,
+            qdt_traj=qdt_control,
+            q_init=q_control[0, :],
+            qdt_init=qdt_control[0, :],
+            disturbance_failure=np.zeros((2, val_length)),
+            measurement_failure=np.zeros((4, val_length)),
+            taudt_threshold=np.array([-5e-2, 5e-2])
+        )
+        rmse = np.sqrt(np.mean(np.sum((pred.T - trajectory.T) ** 2, axis=0)))
+        rmses.append(rmse)
+
+    # Store only the first trajectory for logging purposes
     trial.set_user_attr("y_pred", pred.reshape(1, -1, 2))
     trial.set_user_attr("y_true", trajectory.reshape(1, -1, 2))
-    return np.sqrt(np.mean(np.sum((pred.T - trajectory.T) ** 2, axis=0)))
+
+    return np.mean(rmses)
 
 
 # === Experiment runner for a single run (inside subprocess) ===

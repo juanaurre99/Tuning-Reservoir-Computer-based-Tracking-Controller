@@ -1,0 +1,6 @@
+numpy
+scipy
+matplotlib
+joblib
+optuna
+pyreco  # Replace with local path if not available on PyPI

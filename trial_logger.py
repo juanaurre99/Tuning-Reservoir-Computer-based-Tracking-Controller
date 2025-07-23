@@ -10,6 +10,7 @@ class TrialLogger:
     def __init__(self, log_dir="plots/manual_labeling", csv_name="trial_log.csv"):
         self.log_dir = log_dir
         self.csv_path = os.path.join(self.log_dir, csv_name)
+        print("[DEBUG] TrialLogger initialized. Has log_importance:", hasattr(self, 'log_importance'))
 
         os.makedirs(self.log_dir, exist_ok=True)
 
@@ -95,3 +96,30 @@ class TrialLogger:
             print(f"[TrialLogger] Saved model to {path}")
         except Exception as e:
             print(f"[TrialLogger ERROR] Failed to save model: {e}")
+
+    # Inside TrialLogger
+    def log_importance(self, importances: dict, method: str, run_id: int):
+        """Save importances as JSON for later aggregation."""
+        json_path = os.path.join(self.log_dir, f"importance_{method}_run{run_id:02}.json")
+        try:
+            with open(json_path, 'w') as f:
+                json.dump(importances, f, indent=4)
+            print(f"[TrialLogger] Saved importance scores to {json_path}")
+        except Exception as e:
+            print(f"[TrialLogger ERROR] Failed to save importances: {e}")
+
+    def log_importance_csv(self, importances: dict, method: str, run_id: int):
+        """Log importances to a CSV for aggregation."""
+        csv_path = os.path.join(self.log_dir, "importance_log.csv")
+        file_exists = os.path.exists(csv_path)
+
+        try:
+            with open(csv_path, mode='a', newline='') as f:
+                writer = csv.writer(f)
+                if not file_exists:
+                    writer.writerow(["method", "run_id", "hyperparameter", "importance"])
+                for hp, score in importances.items():
+                    writer.writerow([method, run_id, hp, score])
+            print(f"[TrialLogger] Logged importance scores to {csv_path}")
+        except Exception as e:
+            print(f"[TrialLogger ERROR] Failed to append importances to CSV: {e}")

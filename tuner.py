@@ -15,7 +15,7 @@ class Tuner:
         search_space,
         x_train, y_train,
         x_val=None, y_val=None,
-        metric=None,                     # e.g., 'mse'
+        metric=None,
         n_trials=50,
         sampler_type='tpe',
         num_float_steps=5,
@@ -43,10 +43,12 @@ class Tuner:
         self.trial_logger = trial_logger
         self.run_id = run_id
         self.best_model = None
+        self.best_score = float("inf")
 
     def set_model(self, model):
         self.model = model
         self.best_model = None
+        self.best_score = float("inf")
         self.study = None
 
     def make_grid(self):
@@ -65,8 +67,6 @@ class Tuner:
             return optuna.samplers.TPESampler()
         elif self.sampler_type == 'random':
             return optuna.samplers.RandomSampler()
-        elif self.sampler_type == 'gp':
-            return optuna.samplers.GPSampler()
         elif self.sampler_type == 'grid':
             grid = self.make_grid()
             return optuna.samplers.GridSampler(grid)
@@ -105,12 +105,18 @@ class Tuner:
         if self.verbose:
             print(f"Trial {trial.number:02}: Params={params} → Score={score:.5f}")
 
-        # Log via TrialLogger
+        # 🌟 Speichere bestes Modell sofort, wenn Score besser ist
+        if score < self.best_score:
+            self.best_score = score
+            self.best_model = copy.deepcopy(self.model)
+            if self.verbose:
+                print(f"[Tuner] New best model saved at trial {trial.number:02} with score {score:.5f}")
+
+        # Optional: Logging
         if self.trial_logger is not None:
             trial_id = f"{self.sampler_type}_{self.run_id:02}_{trial.number:02}"
-            best_so_far = self._compute_best_so_far(trial.study, score)
+            best_so_far = self.best_score
 
-            # Universal prediction logging
             y_pred = trial.user_attrs.get("y_pred")
             y_true = trial.user_attrs.get("y_true")
 
@@ -137,22 +143,17 @@ class Tuner:
 
         return score
 
-    def _compute_best_so_far(self, study, current_score):
-        best = float("inf")
-        for t in study.trials:
-            if t.value is not None:
-                best = min(best, t.value)
-        return min(best, current_score)
-
     def optimize(self):
         self.study = optuna.create_study(direction=self.direction, sampler=self.get_sampler())
         self.study.optimize(self.objective, n_trials=self.n_trials)
-        self.best_model = copy.deepcopy(self.model)
-        return self.study
 
-    def report(self):
-        print("Best Params:", self.study.best_trial.params)
-        print("Best Score:", self.study.best_trial.value)
+        if self.trial_logger is not None:
+            from optuna.importance import get_param_importances
+            importances = get_param_importances(self.study)
+            self.trial_logger.log_importance(importances, self.sampler_type, self.run_id)
+            self.trial_logger.log_importance_csv(importances, self.sampler_type, self.run_id)
+
+        return self.study
 
     def save_best_model(self, path):
         if self.best_model is not None:
@@ -160,3 +161,7 @@ class Tuner:
             print(f"[Tuner] Best model saved to: {path}")
         else:
             print("[Tuner] No best model to save. Did you run optimize()?")
+
+    def report(self):
+        print("Best Params:", self.study.best_trial.params)
+        print("Best Score:", self.study.best_trial.value)

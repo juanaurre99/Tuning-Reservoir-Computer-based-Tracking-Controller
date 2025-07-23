@@ -1,0 +1,34 @@
+{
+  "robot_params": {
+    "m1": 1.0,
+    "m2": 1.0,
+    "l1": 0.5,
+    "l2": 0.5,
+    "lc1": 0.25,
+    "lc2": 0.25,
+    "I1": 0.03,
+    "I2": 0.03,
+    "dt": 0.01
+  },
+  "data": {
+  "train_data_file": "fixed_robot_training_data.mat",
+  "validation_trajectories": ["lorenz", "circle"]
+},
+
+  "search_space": {
+  "spec_rad": ["float", 0.1, 1.0],
+  "leakage_rate": ["float", 0.05, 1.0],
+  "activation": ["categorical", ["tanh", "sigmoid"]],
+  "input_scaling": ["float", 0.1, 1.0],
+  "alpha": ["float", 1e-6, 1.0]
+},
+  "experiment": {
+    "experiment_name": "rc_experiment_test",
+    "training_length": 1000,
+    "methods": ["tpe"],
+    "n_trials": 3,
+    "n_runs": 3,
+    "n_processes": 1,
+    "model_dir": "saved_reservoirs"
+  }
+}
